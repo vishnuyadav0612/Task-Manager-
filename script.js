@@ -1,4 +1,4 @@
-﻿const taskForm = document.getElementById('taskForm');
+const taskForm = document.getElementById('taskForm');
 const taskTitle = document.getElementById('taskTitle');
 const taskCategory = document.getElementById('taskCategory');
 const taskDue = document.getElementById('taskDue');
@@ -6,20 +6,18 @@ const taskList = document.getElementById('taskList');
 const taskCount = document.getElementById('taskCount');
 const clearAllBtn = document.getElementById('clearAllBtn');
 
-const STORAGE_KEY = 'colorfulTaskManager.tasks';
+const API_BASE = '/api/tasks';
 let tasks = [];
 
-function loadTasks() {
+async function fetchTasks() {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    tasks = saved ? JSON.parse(saved) : [];
+    const response = await fetch(API_BASE);
+    if (!response.ok) throw new Error('Failed to load tasks');
+    tasks = await response.json();
   } catch (error) {
     tasks = [];
+    alert('Unable to load tasks from the server.');
   }
-}
-
-function saveTasks() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
 }
 
 function createTaskElement(task) {
@@ -38,11 +36,11 @@ function createTaskElement(task) {
   meta.className = 'task-meta';
 
   const badge = document.createElement('span');
-  badge.className = 	ask-badge badge-;
+  badge.className = `task-badge badge-${task.category}`;
   badge.textContent = task.category;
 
   const due = document.createElement('span');
-  due.textContent = task.due ? Due  : 'No due date';
+  due.textContent = task.due ? `Due ${task.due}` : 'No due date';
 
   meta.append(badge, due);
   details.append(title, meta);
@@ -72,7 +70,7 @@ function createTaskElement(task) {
   return card;
 }
 
-function updateTaskList() {
+function renderTasks() {
   taskList.innerHTML = '';
 
   if (!tasks.length) {
@@ -86,11 +84,11 @@ function updateTaskList() {
     });
   }
 
-  taskCount.textContent = ${tasks.length} task active;
+  taskCount.textContent = `${tasks.length} task${tasks.length === 1 ? '' : 's'} active`;
   clearAllBtn.disabled = tasks.length === 0;
 }
 
-function addTask(event) {
+async function addTask(event) {
   event.preventDefault();
 
   const title = taskTitle.value.trim();
@@ -99,44 +97,80 @@ function addTask(event) {
     return;
   }
 
-  const newTask = {
-    id: Date.now().toString(),
+  const payload = {
     title,
     category: taskCategory.value,
     due: taskDue.value ? new Date(taskDue.value).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '',
-    done: false,
   };
 
-  tasks.push(newTask);
-  saveTasks();
-  updateTaskList();
-  taskForm.reset();
-  taskTitle.focus();
+  try {
+    const response = await fetch(API_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) throw new Error('Failed to add task');
+
+    const task = await response.json();
+    tasks.push(task);
+    renderTasks();
+    taskForm.reset();
+    taskTitle.focus();
+  } catch (error) {
+    alert('Unable to add task. Please try again.');
+  }
 }
 
-function deleteTask(id) {
-  tasks = tasks.filter((task) => task.id !== id);
-  saveTasks();
-  updateTaskList();
+async function deleteTask(id) {
+  try {
+    const response = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+    if (!response.ok && response.status !== 204) throw new Error('Delete error');
+    tasks = tasks.filter((task) => task.id !== id);
+    renderTasks();
+  } catch (error) {
+    alert('Unable to delete task.');
+  }
 }
 
-function toggleDone(id) {
-  tasks = tasks.map((task) => (task.id === id ? { ...task, done: !task.done } : task));
-  saveTasks();
-  updateTaskList();
+async function toggleDone(id) {
+  const task = tasks.find((taskItem) => taskItem.id === id);
+  if (!task) return;
+
+  try {
+    const response = await fetch(`${API_BASE}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ done: !task.done }),
+    });
+    if (!response.ok) throw new Error('Update error');
+
+    const updated = await response.json();
+    tasks = tasks.map((taskItem) => (taskItem.id === id ? updated : taskItem));
+    renderTasks();
+  } catch (error) {
+    alert('Unable to update task status.');
+  }
 }
 
-function clearAllTasks() {
+async function clearAllTasks() {
   if (!tasks.length) return;
   if (!confirm('Clear all tasks? This cannot be undone.')) return;
 
-  tasks = [];
-  saveTasks();
-  updateTaskList();
+  try {
+    const response = await fetch(API_BASE, { method: 'DELETE' });
+    if (!response.ok && response.status !== 204) throw new Error('Clear error');
+    tasks = [];
+    renderTasks();
+  } catch (error) {
+    alert('Unable to clear tasks.');
+  }
 }
 
 taskForm.addEventListener('submit', addTask);
 clearAllBtn.addEventListener('click', clearAllTasks);
 
-loadTasks();
-updateTaskList();
+(async function initialize() {
+  await fetchTasks();
+  renderTasks();
+})();
