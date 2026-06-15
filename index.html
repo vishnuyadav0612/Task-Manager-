@@ -1,0 +1,70 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vivid Task Manager</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Productivity boost</p>
+        <h1>Task Manager</h1>
+        <p class="subtitle">Organize your day with a flexible planner that feels bright and fun.</p>
+      </div>
+      <button id="clearAllBtn" class="ghost-btn">Clear All Tasks</button>
+    </header>
+
+    <main class="app-grid">
+      <section class="panel panel-form">
+        <div class="panel-top">
+          <h2>Add a new task</h2>
+          <p>Tap a title and choose a category to keep your work flowing.</p>
+        </div>
+
+        <form id="taskForm" class="task-form">
+          <label>
+            Task title
+            <input type="text" id="taskTitle" placeholder="Write a task name" maxlength="80" required />
+          </label>
+
+          <label>
+            Category
+            <select id="taskCategory">
+              <option value="Focus">Focus</option>
+              <option value="Quick">Quick</option>
+              <option value="Meeting">Meeting</option>
+              <option value="Design">Design</option>
+              <option value="Personal">Personal</option>
+            </select>
+          </label>
+
+          <label>
+            Due date
+            <input type="date" id="taskDue" />
+          </label>
+
+          <button type="submit" class="primary-btn">Add task</button>
+        </form>
+      </section>
+
+      <section class="panel panel-list">
+        <div class="panel-top">
+          <h2>Your tasks</h2>
+          <p id="taskCount">0 tasks active</p>
+        </div>
+
+        <div id="taskList" class="task-list" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Built with bright UI, local storage, and responsive design.</p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
